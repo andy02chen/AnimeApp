@@ -25,19 +25,36 @@ public class MALUser implements ActionListener {
     }
 
     public void enterUserName() {
+        username.setText("Enter MAL Username");
         confirmUserText.setText("Please Enter a Username");
+        userPFP.setIcon(new ImageIcon(new ImageIcon("src/main/resources/mal-logo.png").getImage().getScaledInstance(120, 120,  java.awt.Image.SCALE_SMOOTH)));
+        confirmPanel.setVisible(false);
+        app.panelBot.revalidate();
+        app.panelBot.repaint();
     }
 
     public void doesNotExist() {
-        confirmUserText.setText("That Username does not exist!");
         username.setText("Enter MAL Username");
+        confirmUserText.setText("That Username does not exist!");
         userPFP.setIcon(new ImageIcon(new ImageIcon("src/main/resources/mal-logo.png").getImage().getScaledInstance(120, 120,  java.awt.Image.SCALE_SMOOTH)));
         confirmPanel.setVisible(false);
+
+        app.panelBot.revalidate();
+        app.panelBot.repaint();
     }
 
     public void setUserData(JSONObject profileData) {
         this.userData = profileData;
-        setUserImage(userData.getJSONObject("images").getJSONObject("jpg").getString("image_url"));
+        Object imgPath = userData.getJSONObject("images").getJSONObject("jpg").get("image_url");
+
+        if(imgPath.equals(null)) {
+            userPFP.setIcon(new ImageIcon(new ImageIcon("src/main/resources/no-img.png").getImage().getScaledInstance(120, 120,  java.awt.Image.SCALE_SMOOTH)));
+            confirmUserText.setText("Is this your profile picture?");
+            displayConfirmation();
+        } else {
+            setUserImage((String)imgPath);
+        }
+
     }
 
     public void displayConfirmation() {
@@ -104,7 +121,12 @@ public class MALUser implements ActionListener {
         //TODO yes button listener
 //        yesButton.addActionListener(new ConfirmUser(app));
         JButton noButton = new JButton("No");
-        //TODO no button listener
+        noButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                enterUserName();
+            }
+        });
         yesButton.setFont(app.headingFont);
         noButton.setFont(app.headingFont);
 
