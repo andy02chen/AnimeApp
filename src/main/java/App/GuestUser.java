@@ -19,7 +19,7 @@ public class GuestUser implements ActionListener {
 
         JButton backButton = new JButton("Back");
         backButton.setFont(app.headingFont);
-        backButton.addActionListener(new BackButtonListener(app));
+        backButton.addActionListener(new BackButtonListener(app, 0));
         app.panelBot.add(backButton);
 
         app.panelBot.revalidate();

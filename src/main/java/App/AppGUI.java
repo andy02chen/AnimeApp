@@ -55,6 +55,69 @@ public class AppGUI extends JFrame {
         homeMenuScreen();
     }
 
+    public void recommendationOptionsScreen() {
+        panelBot.removeAll();
+
+        title.setText("Recommendations");
+        panelBot.setLayout(new BoxLayout(panelBot, BoxLayout.PAGE_AXIS));
+
+        GridBagConstraints gbc = new GridBagConstraints();
+        JLabel text = new JLabel("How would you like the recommendations to be generated?");
+        text.setFont(headingFont);
+
+        JPanel p1 = new JPanel();
+        JPanel p2 = new JPanel();
+        JPanel p3 = new JPanel();
+        JPanel p4 = new JPanel();
+        JPanel p5 = new JPanel();
+
+        JButton fromFavs = new JButton("Favourites");
+        fromFavs.addActionListener(new GetRecommendations(this, 0));
+
+        JButton fromPlanToWatch = new JButton("Plan to Watch");
+        fromPlanToWatch.addActionListener(new GetRecommendations(this, 1));
+
+        JButton fromCompleted = new JButton("Completed");
+        fromCompleted.addActionListener(new GetRecommendations(this, 2));
+
+        JButton fromWatching = new JButton("Currently Watching");
+        fromWatching.addActionListener(new GetRecommendations(this, 3));
+
+        JButton random = new JButton("Random");
+        random.addActionListener(new GetRecommendations(this, 4));
+
+        Dimension buttonSize = new Dimension(300,50);
+        fromFavs.setPreferredSize(buttonSize);
+        fromPlanToWatch.setPreferredSize(buttonSize);
+        fromCompleted.setPreferredSize(buttonSize);
+        fromWatching.setPreferredSize(buttonSize);
+        random.setPreferredSize(buttonSize);
+
+        fromFavs.setFont(headingFont);
+        fromPlanToWatch.setFont(headingFont);
+        fromCompleted.setFont(headingFont);
+        fromWatching.setFont(headingFont);
+        random.setFont(headingFont);
+
+        panelBot.add(text);
+        panelBot.add(p1);
+        panelBot.add(p2);
+        panelBot.add(p3);
+        panelBot.add(p4);
+        panelBot.add(p5);
+
+        p1.add(fromFavs);
+        p2.add(fromPlanToWatch);
+        p3.add(fromCompleted);
+        p4.add(fromWatching);
+        p5.add(random);
+
+        text.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        panelBot.revalidate();
+        panelBot.repaint();
+    }
+
     // For Display Home Menu
     public void homeMenuScreen() {
         // Clear the bottom panel

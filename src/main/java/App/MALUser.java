@@ -93,7 +93,7 @@ public class MALUser implements ActionListener {
         JPanel backButtonPanel = new JPanel(new GridBagLayout());
         JButton backButton = new JButton("Back");
         backButton.setFont(app.headingFont);
-        backButton.addActionListener(new BackButtonListener(app));
+        backButton.addActionListener(new BackButtonListener(app, 0));
         backButtonPanel.add(backButton);
 
         // Panel for username input s
@@ -118,8 +118,7 @@ public class MALUser implements ActionListener {
         confirmPanel = new JPanel();
 
         JButton yesButton = new JButton("Yes");
-        //TODO yes button listener
-//        yesButton.addActionListener(new ConfirmUser(app));
+        yesButton.addActionListener(new ConfirmUser(app));
         JButton noButton = new JButton("No");
         noButton.addActionListener(new ActionListener() {
             @Override
