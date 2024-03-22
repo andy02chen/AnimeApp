@@ -28,6 +28,10 @@ public class MALUser implements ActionListener {
         favouriteAnimesId = new ArrayList<>();
     }
 
+    public void setConfirmUserText(String text) {
+        confirmUserText.setText(text);
+    }
+
     public int favouriteAnimesSize() {
         return favouriteAnimesId.size();
     }

@@ -12,6 +12,8 @@ import java.util.Scanner;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import javax.swing.*;
+
 public class submitMALUser implements ActionListener {
     MALUser user;
     public submitMALUser(MALUser user) {
@@ -48,18 +50,22 @@ public class submitMALUser implements ActionListener {
 
     @Override
     public void actionPerformed(ActionEvent e) {
-        String username = user.getUserName();
+        user.setConfirmUserText("Retrieving user information...");
+        SwingUtilities.invokeLater(() -> {
+            String username = user.getUserName();
 
-        if(username.equals("Enter MAL Username") || username.isEmpty()) {
-            user.enterUserName();
-        } else {
-            JSONObject profile = getUserData(username);
-
-            if(profile == null) {
-                user.doesNotExist();
+            if(username.equals("Enter MAL Username") || username.isEmpty()) {
+                user.enterUserName();
             } else {
-                user.setUserData(profile);
+                JSONObject profile = getUserData(username);
+
+                if(profile == null) {
+                    user.doesNotExist();
+                } else {
+                    user.setUserData(profile);
+                }
             }
-        }
+        });
+
     }
 }
