@@ -55,7 +55,7 @@ public class AppGUI extends JFrame {
         homeMenuScreen();
     }
 
-    public void recommendationOptionsScreen() {
+    public void recommendationOptionsScreen(MALUser user) {
         panelBot.removeAll();
 
         title.setText("Recommendations");
@@ -72,19 +72,19 @@ public class AppGUI extends JFrame {
         JPanel p5 = new JPanel();
 
         JButton fromFavs = new JButton("Favourites");
-        fromFavs.addActionListener(new GetRecommendations(this, 0));
+        fromFavs.addActionListener(new GetRecommendations(this, 0, user));
 
         JButton fromPlanToWatch = new JButton("Plan to Watch");
-        fromPlanToWatch.addActionListener(new GetRecommendations(this, 1));
+        fromPlanToWatch.addActionListener(new GetRecommendations(this, 1, user));
 
         JButton fromCompleted = new JButton("Completed");
-        fromCompleted.addActionListener(new GetRecommendations(this, 2));
+        fromCompleted.addActionListener(new GetRecommendations(this, 2, user));
 
         JButton fromWatching = new JButton("Currently Watching");
-        fromWatching.addActionListener(new GetRecommendations(this, 3));
+        fromWatching.addActionListener(new GetRecommendations(this, 3, user));
 
         JButton random = new JButton("Random");
-        random.addActionListener(new GetRecommendations(this, 4));
+        random.addActionListener(new GetRecommendations(this, 4, user));
 
         Dimension buttonSize = new Dimension(300,50);
         fromFavs.setPreferredSize(buttonSize);

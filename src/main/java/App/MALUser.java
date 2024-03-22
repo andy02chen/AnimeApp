@@ -1,5 +1,6 @@
 package App;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import javax.imageio.ImageIO;
@@ -11,6 +12,7 @@ import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
 import java.awt.image.BufferedImage;
 import java.net.URL;
+import java.util.ArrayList;
 
 public class MALUser implements ActionListener {
     AppGUI app;
@@ -19,9 +21,27 @@ public class MALUser implements ActionListener {
     private JPanel confirmPanel;
     private JSONObject userData;
     private JLabel confirmUserText;
+    private final ArrayList<Integer> favouriteAnimesId;
 
     public MALUser(AppGUI app) {
         this.app = app;
+        favouriteAnimesId = new ArrayList<>();
+    }
+
+    public int favouriteAnimesSize() {
+        return favouriteAnimesId.size();
+    }
+
+    // Add IDs to favourite animes arraylist
+    public void addFavouriteAnimes(JSONArray favouriteAnimes) {
+        for(int i = 0; i < favouriteAnimes.length(); i++) {
+            JSONObject anime = favouriteAnimes.getJSONObject(i);
+            favouriteAnimesId.add(anime.getInt("mal_id"));
+        }
+    }
+
+    public ArrayList<Integer> getFavouriteAnimesID() {
+        return favouriteAnimesId;
     }
 
     public void enterUserName() {
@@ -33,6 +53,7 @@ public class MALUser implements ActionListener {
         app.panelBot.repaint();
     }
 
+    // When username does not exist
     public void doesNotExist() {
         username.setText("Enter MAL Username");
         confirmUserText.setText("That Username does not exist!");
@@ -43,6 +64,7 @@ public class MALUser implements ActionListener {
         app.panelBot.repaint();
     }
 
+    //Sets users data
     public void setUserData(JSONObject profileData) {
         this.userData = profileData;
         Object imgPath = userData.getJSONObject("images").getJSONObject("jpg").get("image_url");
@@ -118,7 +140,7 @@ public class MALUser implements ActionListener {
         confirmPanel = new JPanel();
 
         JButton yesButton = new JButton("Yes");
-        yesButton.addActionListener(new ConfirmUser(app));
+        yesButton.addActionListener(new ConfirmUser(app, this));
         JButton noButton = new JButton("No");
         noButton.addActionListener(new ActionListener() {
             @Override
