@@ -18,8 +18,8 @@ public class AppGUI extends JFrame {
     public AppGUI() {
         super("Anime Recommender App");
         setDefaultCloseOperation(EXIT_ON_CLOSE);
-        final int height = 720;
-        final int width = 1280;
+        final int height = 1080;
+        final int width = 1980;
         final float titleFontSize = 60f;
         final float headingFontSize = 20f;
         setSize(width, height);

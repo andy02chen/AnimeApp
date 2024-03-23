@@ -9,6 +9,8 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.net.HttpURLConnection;
 import java.net.URI;
@@ -132,6 +134,11 @@ public class GetRecommendations implements ActionListener {
 
     // Display recommendations for favourite anime
     public void displayFavRecommendation() {
+        app.panelBot.removeAll();
+
+        app.panelBot.revalidate();
+        app.panelBot.repaint();
+
         // retrieves favourite anime for the first time
         JSONArray favouriteAnimes = getFavs();
 
@@ -140,10 +147,11 @@ public class GetRecommendations implements ActionListener {
             user.addFavouriteAnimes(favouriteAnimes);
         }
 
-        // randomly select an anime from teh arraylist and generate recommedations
+        // randomly select an anime from teh arraylist and generate recommendations
         int randomAnime = getRandomAnime(user.getFavouriteAnimesID());
         JSONArray recommendations = findRecommendations(randomAnime);
 
+        // Displays the favourite anime selected
         JSONObject animeDetails = getAnimeDetails(randomAnime);
         JPanel chosenAnime = new JPanel();
         JLabel chosenAnimeText = new JLabel();
@@ -166,8 +174,6 @@ public class GetRecommendations implements ActionListener {
                     chosenAnimeImage.setIcon(new ImageIcon(new ImageIcon("src/main/resources/no-img.png").getImage().getScaledInstance(120, 120,  java.awt.Image.SCALE_SMOOTH)));
                 }
 
-                System.out.println(recommendations);
-
             } catch (JSONException g) {
                 chosenAnimeText.setText("Error when retrieving anime details, Click Refresh or check environment variable if that doesn't work.");
                 ImageIcon image = new ImageIcon(new ImageIcon("src/main/resources/error.png")
@@ -175,6 +181,69 @@ public class GetRecommendations implements ActionListener {
                 chosenAnimeImage.setIcon(image);
             }
         }
+
+        // Stores fields of recommendations to display
+        ArrayList<String> titles = new ArrayList<>();
+        ArrayList<String> urls = new ArrayList<>();
+        ArrayList<String> imgUrls = new ArrayList<>();
+        int recommendationLimit = 10;
+        for(int i = 0; i < recommendations.length() && i < recommendationLimit; i++) {
+            JSONObject o = recommendations.getJSONObject(i);
+            JSONObject entry = o.getJSONObject("entry");
+            titles.add(entry.getString("title"));
+            urls.add(entry.getString("url"));
+            imgUrls.add(entry.getJSONObject("images").getJSONObject("jpg").getString("image_url"));
+        }
+
+        // Display recommended anime
+        JPanel holdRecommendedAnimes = new JPanel();
+        holdRecommendedAnimes.setLayout(new BoxLayout(holdRecommendedAnimes, BoxLayout.Y_AXIS));
+
+        for(int i = 0; i < titles.size(); i++) {
+            JLabel animeTitle = new JLabel(titles.get(i));
+            JLabel animeURL = new JLabel(urls.get(i));
+            animeTitle.setFont(app.headingFont);
+            animeURL.setFont(app.headingFont);
+
+            JLabel animeImage = new JLabel();
+
+            try {
+                URL url = new URL(imgUrls.get(i));
+                BufferedImage img =ImageIO.read(url);
+                ImageIcon finalImg = new ImageIcon(new ImageIcon(img)
+                        .getImage());
+                animeImage.setIcon(finalImg);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            animeURL.setForeground(Color.BLUE.darker());
+            animeURL.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            animeURL.addMouseListener(new MouseAdapter() {
+                @Override
+                public void mouseClicked(MouseEvent e) {
+                    if (Desktop.isDesktopSupported()) {
+                        try {
+                            Desktop.getDesktop().browse(new java.net.URI(animeURL.getText()));
+                        } catch (Exception ex) {
+                            ex.printStackTrace();
+                        }
+                    }
+                }
+            });
+
+            holdRecommendedAnimes.add(animeTitle);
+            holdRecommendedAnimes.add(animeURL);
+            holdRecommendedAnimes.add(animeImage);
+            holdRecommendedAnimes.add(Box.createVerticalStrut(20));
+
+            animeTitle.setAlignmentX(Component.CENTER_ALIGNMENT);
+            animeURL.setAlignmentX(Component.CENTER_ALIGNMENT);
+            animeImage.setAlignmentX(Component.CENTER_ALIGNMENT);
+        }
+
+        JScrollPane displayArrayListAnimes = new JScrollPane(holdRecommendedAnimes);
+        displayArrayListAnimes.getVerticalScrollBar().setUnitIncrement(100);
 
         chosenAnimeText.setFont(app.headingFont);
         chosenAnime.add(chosenAnimeText);
@@ -185,6 +254,9 @@ public class GetRecommendations implements ActionListener {
         chosenAnimeText.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         app.panelBot.add(chosenAnime);
+        app.panelBot.add(Box.createVerticalStrut(20));
+        app.panelBot.add(displayArrayListAnimes);
+        app.panelBot.add(Box.createVerticalStrut(20));
         app.panelBot.revalidate();
         app.panelBot.repaint();
     }
@@ -206,11 +278,14 @@ public class GetRecommendations implements ActionListener {
         app.panelBot.repaint();
     }
 
-    // TODO maybe try to make it so that the screen changes first then displays the results
-    // TODO maybe change size of anime image
     @Override
     public void actionPerformed(ActionEvent e) {
         app.panelBot.removeAll();
+        JLabel loading = new JLabel("Please Wait...");
+        loading.setFont(app.headingFont);
+        app.panelBot.add(loading);
+        loading.setAlignmentX(Component.CENTER_ALIGNMENT);
+
         app.panelBot.revalidate();
         app.panelBot.repaint();
 
@@ -250,27 +325,25 @@ public class GetRecommendations implements ActionListener {
             @Override
             public void actionPerformed(ActionEvent e) {
                 app.panelBot.removeAll();
+                JLabel loading = new JLabel("Please Wait...");
+                loading.setFont(app.headingFont);
+                app.panelBot.add(loading);
+                loading.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+                app.panelBot.revalidate();
+                app.panelBot.repaint();
+
                 switch(selection) {
                     case 0:
                         app.title.setText("Favourites");
                         app.panelBot.revalidate();
                         app.panelBot.repaint();
-                        displayFavRecommendation();
+                        SwingUtilities.invokeLater(() -> {
+                            displayFavRecommendation();
+                            displayBackRefresh();
+                        });
                         break;
                 }
-                JPanel backButtonPanel = new JPanel(new GridBagLayout());
-                JButton refreshButton = getRefreshButton();
-
-                JButton backButton = new JButton("Back");
-                backButton.setFont(app.headingFont);
-                backButton.addActionListener(new BackButtonListener(app, 1, user));
-                backButtonPanel.add(backButton);
-                backButtonPanel.add(refreshButton);
-
-                app.panelBot.add(backButtonPanel);
-
-                app.panelBot.revalidate();
-                app.panelBot.repaint();
             }
         });
         return refreshButton;
