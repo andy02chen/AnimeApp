@@ -1,6 +1,7 @@
 package App;
 
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import javax.imageio.ImageIO;
@@ -106,11 +107,19 @@ public class GetRecommendations implements ActionListener {
 
         try{
             HttpClient httpClient = HttpClient.newHttpClient();
+
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create("https://api.myanimelist.net/v2/anime/" + malID))
                     .header("X-MAL-CLIENT-ID", System.getenv("MyAnimeListID"))
                     .GET()
                     .build();
+
+            // Uncomment to test error
+//            HttpRequest request = HttpRequest.newBuilder()
+//                    .uri(URI.create("https://api.myanimelist.net/v2/anime/" + malID))
+//                    .header("X-MAL-CLIENT-ID", "a")
+//                    .GET()
+//                    .build();
 
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             return new JSONObject(response.body());
@@ -121,70 +130,97 @@ public class GetRecommendations implements ActionListener {
         return null;
     }
 
+    // Display recommendations for favourite anime
+    public void displayFavRecommendation() {
+        // retrieves favourite anime for the first time
+        JSONArray favouriteAnimes = getFavs();
+
+        // user's favourite animes have already been retrieved
+        if(favouriteAnimes != null) {
+            user.addFavouriteAnimes(favouriteAnimes);
+        }
+
+        // randomly select an anime from teh arraylist and generate recommedations
+        int randomAnime = getRandomAnime(user.getFavouriteAnimesID());
+        JSONArray recommendations = findRecommendations(randomAnime);
+
+        JSONObject animeDetails = getAnimeDetails(randomAnime);
+        JPanel chosenAnime = new JPanel();
+        JLabel chosenAnimeText = new JLabel();
+        JLabel chosenAnimeImage = new JLabel();
+        if(animeDetails != null) {
+            try {
+                chosenAnimeText.setText("Chosen Anime: \"" + animeDetails.getString("title") + "\"");
+
+                BufferedImage animeImg;
+                try {
+                    URL url = new URL(animeDetails.getJSONObject("main_picture").getString("medium"));
+                    animeImg = ImageIO.read(url);
+
+                    ImageIcon image = new ImageIcon(new ImageIcon(animeImg)
+                            .getImage());
+//                            .getScaledInstance(120, 120,  java.awt.Image.SCALE_SMOOTH));
+                    chosenAnimeImage.setIcon(image);
+                } catch (Exception f) {
+                    f.printStackTrace();
+                    chosenAnimeImage.setIcon(new ImageIcon(new ImageIcon("src/main/resources/no-img.png").getImage().getScaledInstance(120, 120,  java.awt.Image.SCALE_SMOOTH)));
+                }
+
+                System.out.println(recommendations);
+
+            } catch (JSONException g) {
+                chosenAnimeText.setText("Error when retrieving anime details, Click Refresh or check environment variable if that doesn't work.");
+                ImageIcon image = new ImageIcon(new ImageIcon("src/main/resources/error.png")
+                        .getImage());
+                chosenAnimeImage.setIcon(image);
+            }
+        }
+
+        chosenAnimeText.setFont(app.headingFont);
+        chosenAnime.add(chosenAnimeText);
+        chosenAnime.add(chosenAnimeImage);
+
+        chosenAnime.setLayout(new BoxLayout(chosenAnime, BoxLayout.Y_AXIS));
+        chosenAnimeImage.setAlignmentX(Component.CENTER_ALIGNMENT);
+        chosenAnimeText.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        app.panelBot.add(chosenAnime);
+        app.panelBot.revalidate();
+        app.panelBot.repaint();
+    }
+
+    // For Displaying buttons
+    private void displayBackRefresh() {
+        JPanel backButtonPanel = new JPanel(new GridBagLayout());
+        JButton refreshButton = getRefreshButton();
+
+        JButton backButton = new JButton("Back");
+        backButton.setFont(app.headingFont);
+        backButton.addActionListener(new BackButtonListener(app, 1, user));
+        backButtonPanel.add(backButton);
+        backButtonPanel.add(refreshButton);
+
+        app.panelBot.add(backButtonPanel);
+
+        app.panelBot.revalidate();
+        app.panelBot.repaint();
+    }
+
     // TODO maybe try to make it so that the screen changes first then displays the results
-    // TODO add a refresh button for favourites
-    // TODO maybe change size of image image
-    // TODO test when client id is invalid
+    // TODO maybe change size of anime image
     @Override
     public void actionPerformed(ActionEvent e) {
         app.panelBot.removeAll();
+        app.panelBot.revalidate();
+        app.panelBot.repaint();
 
         switch(selection) {
             case 0:
                 app.title.setText("Favourites");
-                JSONArray favouriteAnimes = getFavs();
-
-                // user's favourite animes have already been retrieved
-                if(favouriteAnimes != null) {
-                    user.addFavouriteAnimes(favouriteAnimes);
-                }
-
-                int randomAnime = getRandomAnime(user.getFavouriteAnimesID());
-                JSONArray recommendations = findRecommendations(randomAnime);
-
-//                for(int i = 0; i < recommendations.length(); i++) {
-//                    System.out.println(recommendations.get(i));
-//                }
-
-                JSONObject animeDetails = getAnimeDetails(randomAnime);
-                JPanel chosenAnime = new JPanel();
-                JLabel chosenAnimeText;
-                JLabel chosenAnimeImage = new JLabel();
-                if(animeDetails != null) {
-                    chosenAnimeText = new JLabel("Chosen Anime: \"" + animeDetails.getString("title") + "\"");
-
-                    BufferedImage animeImg;
-                    try {
-                        URL url = new URL(animeDetails.getJSONObject("main_picture").getString("medium"));
-                        animeImg = ImageIO.read(url);
-
-                        ImageIcon image = new ImageIcon(new ImageIcon(animeImg)
-                                .getImage());
-//                            .getScaledInstance(120, 120,  java.awt.Image.SCALE_SMOOTH));
-                        chosenAnimeImage.setIcon(image);
-                    } catch (Exception f) {
-                        f.printStackTrace();
-                        chosenAnimeImage.setIcon(new ImageIcon(new ImageIcon("src/main/resources/no-img.png").getImage().getScaledInstance(120, 120,  java.awt.Image.SCALE_SMOOTH)));
-                    }
-
-                } else {
-                    chosenAnimeText = new JLabel("Error when retrieving anime details, Click Refresh or check environment variable if that doesn't work.");
-                    ImageIcon image = new ImageIcon(new ImageIcon("src/main/resources/error.png")
-                            .getImage());
-                    chosenAnimeImage.setIcon(image);
-                }
-
-                System.out.println(recommendations);
-                chosenAnimeText.setFont(app.headingFont);
-                chosenAnime.add(chosenAnimeText);
-                chosenAnime.add(chosenAnimeImage);
-
-                chosenAnime.setLayout(new BoxLayout(chosenAnime, BoxLayout.Y_AXIS));
-                chosenAnimeImage.setAlignmentX(Component.CENTER_ALIGNMENT);
-                chosenAnimeText.setAlignmentX(Component.CENTER_ALIGNMENT);
-
-                app.panelBot.add(chosenAnime);
-
+                SwingUtilities.invokeLater(() -> {
+                    displayFavRecommendation();
+                    displayBackRefresh();
+                });
                 break;
 
             case 1:
@@ -203,16 +239,40 @@ public class GetRecommendations implements ActionListener {
                 app.title.setText("Random");
                 break;
         }
+    }
 
-        JPanel backButtonPanel = new JPanel(new GridBagLayout());
-        JButton backButton = new JButton("Back");
-        backButton.setFont(app.headingFont);
-        backButton.addActionListener(new BackButtonListener(app, 1, user));
-        backButtonPanel.add(backButton);
+    // Refresh the chosen anime and recommendations
+    private JButton getRefreshButton() {
+        JButton refreshButton = new JButton("Refresh");
+        refreshButton.setFont(app.headingFont);
 
-        app.panelBot.add(backButtonPanel);
+        refreshButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                app.panelBot.removeAll();
+                switch(selection) {
+                    case 0:
+                        app.title.setText("Favourites");
+                        app.panelBot.revalidate();
+                        app.panelBot.repaint();
+                        displayFavRecommendation();
+                        break;
+                }
+                JPanel backButtonPanel = new JPanel(new GridBagLayout());
+                JButton refreshButton = getRefreshButton();
 
-        app.panelBot.revalidate();
-        app.panelBot.repaint();
+                JButton backButton = new JButton("Back");
+                backButton.setFont(app.headingFont);
+                backButton.addActionListener(new BackButtonListener(app, 1, user));
+                backButtonPanel.add(backButton);
+                backButtonPanel.add(refreshButton);
+
+                app.panelBot.add(backButtonPanel);
+
+                app.panelBot.revalidate();
+                app.panelBot.repaint();
+            }
+        });
+        return refreshButton;
     }
 }
