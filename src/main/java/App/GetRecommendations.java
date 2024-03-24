@@ -320,6 +320,75 @@ public class GetRecommendations implements ActionListener {
         app.panelBot.repaint();
     }
 
+    private JSONObject apiRandomAnime() {
+        try{
+            HttpClient httpClient = HttpClient.newHttpClient();
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create("https://api.jikan.moe/v4/random/anime"))
+                    .GET()
+                    .build();
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            JSONObject o = new JSONObject(response.body());
+            return o.getJSONObject("data");
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private void generateRandomAnime() {
+        app.panelBot.removeAll();
+        app.panelBot.revalidate();
+        app.panelBot.repaint();
+
+        JSONObject randomAnime = apiRandomAnime();
+        JPanel chosenAnime = new JPanel();
+        chosenAnime.setLayout(new BoxLayout(chosenAnime, BoxLayout.PAGE_AXIS));
+        JLabel title = new JLabel(randomAnime.getString("title"));
+        title.setFont(app.headingFont);
+        int malID = randomAnime.getInt("mal_id");
+        JLabel animeURL = new JLabel("https://myanimelist.net/anime/" + malID);
+        animeURL.setFont(app.headingFont);
+
+        JLabel animeImage = new JLabel();
+        try {
+            URL recAnimeUrl = new URL(randomAnime.getJSONObject("images").getJSONObject("jpg").getString("image_url"));
+            BufferedImage img =ImageIO.read(recAnimeUrl);
+            ImageIcon finalImg = new ImageIcon(new ImageIcon(img)
+                    .getImage());
+            animeImage.setIcon(finalImg);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        animeURL.setForeground(Color.BLUE.darker());
+        animeURL.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        animeURL.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (Desktop.isDesktopSupported()) {
+                    try {
+                        Desktop.getDesktop().browse(new java.net.URI(animeURL.getText()));
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                    }
+                }
+            }
+        });
+
+        chosenAnime.add(title);
+        chosenAnime.add(animeURL);
+        chosenAnime.add(animeImage);
+        title.setAlignmentX(Component.CENTER_ALIGNMENT);
+        animeURL.setAlignmentX(Component.CENTER_ALIGNMENT);
+        animeImage.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        app.panelBot.add(chosenAnime);
+        app.panelBot.revalidate();
+        app.panelBot.repaint();
+    }
+
     // For Displaying buttons
     private void displayBackRefresh() {
         JPanel backButtonPanel = new JPanel(new GridBagLayout());
@@ -375,6 +444,10 @@ public class GetRecommendations implements ActionListener {
 
             case 4:
                 app.title.setText("Random");
+                SwingUtilities.invokeLater(()-> {
+                    generateRandomAnime();
+                    displayBackRefresh();
+                });
                 break;
         }
     }
@@ -411,6 +484,16 @@ public class GetRecommendations implements ActionListener {
                     app.panelBot.repaint();
                     SwingUtilities.invokeLater(()-> {
                         chooseFromPlanToWatch();
+                        displayBackRefresh();
+                    });
+                    break;
+
+                case 4:
+                    app.title.setText("Random");
+                    app.panelBot.revalidate();
+                    app.panelBot.repaint();
+                    SwingUtilities.invokeLater(()-> {
+                        generateRandomAnime();
                         displayBackRefresh();
                     });
                     break;
