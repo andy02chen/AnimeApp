@@ -97,6 +97,13 @@ public class GetRecommendations implements ActionListener {
         return null;
     }
 
+    private JSONObject getRandomAnime(JSONArray arr) {
+        int max = arr.length();
+        int randomAnime = (int) (Math.random() * max);
+
+        return arr.getJSONObject(randomAnime).getJSONObject("node");
+    }
+
     private int getRandomAnime(ArrayList<Integer> animes) {
         int max = animes.size();
         int randomAnime = (int) (Math.random() * max);
@@ -132,6 +139,103 @@ public class GetRecommendations implements ActionListener {
         return null;
     }
 
+    // Retrieves plan to watch list
+    public JSONArray getPlanToWatch() {
+        try{
+            HttpClient httpClient = HttpClient.newHttpClient();
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create("https://api.myanimelist.net/v2/users/" + user.getUserName() + "/animelist?status=plan_to_watch&limit=1000"))
+                    .header("X-MAL-CLIENT-ID", System.getenv("MyAnimeListID"))
+                    .GET()
+                    .build();
+
+            // TODO Uncomment to test error
+//            HttpRequest request = HttpRequest.newBuilder()
+//                    .uri(URI.create("https://api.myanimelist.net/v2/users/" + user.getUserName() + "/animelist?status=plan_to_watch&limit=1000"))
+//                    .header("X-MAL-CLIENT-ID", "a")
+//                    .GET()
+//                    .build();
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            JSONObject o = new JSONObject(response.body());
+            return o.getJSONArray("data");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return null;
+    }
+
+    // Display random anime from plan to watch list
+    public void chooseFromPlanToWatch() {
+        app.panelBot.removeAll();
+        app.panelBot.revalidate();
+        app.panelBot.repaint();
+
+        // Get Users plan to watch list
+        JSONArray planToWatchList = getPlanToWatch();
+        JPanel chosenAnime = new JPanel();
+        chosenAnime.setLayout(new BoxLayout(chosenAnime, BoxLayout.Y_AXIS));
+
+        // If users plan to watch list is empty
+        if(planToWatchList.length() == 0) {
+            // Display error message
+            JLabel error = new JLabel("You do not have any anime in plan to watch. Add some anime in MyAnimeList or choose another option for recommendations.");
+            error.setFont(app.headingFont);
+            error.setAlignmentX(Component.CENTER_ALIGNMENT);
+            chosenAnime.add(error);
+        } else {
+            // Choose random Anime from the list
+            JSONObject animeToDisplay =  getRandomAnime(planToWatchList);
+
+            // Display the anime
+            JLabel title = new JLabel(animeToDisplay.getString("title"));
+            title.setFont(app.headingFont);
+
+            JLabel url = new JLabel("https://myanimelist.net/anime/" + animeToDisplay.getInt("id"));
+            url.setFont(app.headingFont);
+
+            url.setForeground(Color.BLUE.darker());
+            url.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            url.addMouseListener(new MouseAdapter() {
+                @Override
+                public void mouseClicked(MouseEvent e) {
+                    if (Desktop.isDesktopSupported()) {
+                        try {
+                            Desktop.getDesktop().browse(new java.net.URI(url.getText()));
+                        } catch (Exception ex) {
+                            ex.printStackTrace();
+                        }
+                    }
+                }
+            });
+
+            JLabel imgForDisplay = new JLabel();
+
+            try {
+                URL urlImg = new URL(animeToDisplay.getJSONObject("main_picture").getString("medium"));
+                BufferedImage img = ImageIO.read(urlImg);
+                ImageIcon image = new ImageIcon(new ImageIcon(img)
+                        .getImage());
+                imgForDisplay.setIcon(image);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            chosenAnime.add(title);
+            chosenAnime.add(url);
+            chosenAnime.add(imgForDisplay);
+            title.setAlignmentX(Component.CENTER_ALIGNMENT);
+            url.setAlignmentX(Component.CENTER_ALIGNMENT);
+            imgForDisplay.setAlignmentX(Component.CENTER_ALIGNMENT);
+        }
+
+        app.panelBot.add(chosenAnime);
+        app.panelBot.revalidate();
+        app.panelBot.repaint();
+    }
+
     // Display recommendations for favourite anime
     public void displayFavRecommendation() {
         app.panelBot.removeAll();
@@ -147,9 +251,9 @@ public class GetRecommendations implements ActionListener {
             user.addFavouriteAnimes(favouriteAnimes);
         }
 
-        if(favouriteAnimes.length() == 0) {
+        if(user.favouriteAnimesSize() == 0) {
 
-            JLabel errorMsg = new JLabel("You have not selected any favourite animes. Add some on MyAnimeList or use another option");
+            JLabel errorMsg = new JLabel("You have not selected any favourite animes. Add some on MyAnimeList or use another option for getting recommendations.");
             errorMsg.setFont(app.headingFont);
             errorMsg.setAlignmentX(Component.CENTER_ALIGNMENT);
             app.panelBot.add(errorMsg);
@@ -175,7 +279,6 @@ public class GetRecommendations implements ActionListener {
 
                         ImageIcon image = new ImageIcon(new ImageIcon(animeImg)
                                 .getImage());
-//                            .getScaledInstance(120, 120,  java.awt.Image.SCALE_SMOOTH));
                         chosenAnimeImage.setIcon(image);
                     } catch (Exception f) {
                         f.printStackTrace();
@@ -309,6 +412,10 @@ public class GetRecommendations implements ActionListener {
 
             case 1:
                 app.title.setText("Plan To Watch");
+                SwingUtilities.invokeLater(()-> {
+                    chooseFromPlanToWatch();
+                    displayBackRefresh();
+                });
                 break;
 
             case 2:
@@ -349,6 +456,16 @@ public class GetRecommendations implements ActionListener {
                         app.panelBot.repaint();
                         SwingUtilities.invokeLater(() -> {
                             displayFavRecommendation();
+                            displayBackRefresh();
+                        });
+                        break;
+
+                    case 1:
+                        app.title.setText("Plan To Watch");
+                        app.panelBot.revalidate();
+                        app.panelBot.repaint();
+                        SwingUtilities.invokeLater(()-> {
+                            chooseFromPlanToWatch();
                             displayBackRefresh();
                         });
                         break;
