@@ -23,6 +23,9 @@ public class GetRecommendations implements ActionListener {
     AppGUI app;
     int selection;
     MALUser user;
+    private JSONArray favAnimes;
+    private JSONArray planToWatchList;
+    private JSONArray currWatchingAnime;
 
     public GetRecommendations(AppGUI app, int optionSelection, MALUser user) {
         this.app = app;
@@ -100,7 +103,10 @@ public class GetRecommendations implements ActionListener {
         app.panelBot.repaint();
 
         // Get Users plan to watch list
-        JSONArray planToWatchList = getPlanToWatch();
+        if(planToWatchList == null) {
+            planToWatchList = getPlanToWatch();
+        }
+
         JPanel chosenAnime = new JPanel();
         chosenAnime.setLayout(new BoxLayout(chosenAnime, BoxLayout.Y_AXIS));
 
@@ -206,7 +212,10 @@ public class GetRecommendations implements ActionListener {
         app.panelBot.repaint();
 
         // Get fav animes
-        JSONArray favAnimes = getFavAnimes();
+        if(favAnimes == null) {
+            favAnimes = getFavAnimes();
+        }
+
         if(favAnimes.isEmpty()) {
             JLabel error = new JLabel("No Favourite anime found. Favourite some anime on MyAnimeList and try again later.");
             error.setFont(app.headingFont);
@@ -320,6 +329,7 @@ public class GetRecommendations implements ActionListener {
         app.panelBot.repaint();
     }
 
+    // Call API and get random anime
     private JSONObject apiRandomAnime() {
         try{
             HttpClient httpClient = HttpClient.newHttpClient();
@@ -335,6 +345,159 @@ public class GetRecommendations implements ActionListener {
         } catch (Exception e) {
             return null;
         }
+    }
+
+    // Generate recommendations that are similar to the ones currently watching
+    private JSONArray getCurrWatchingAnime() {
+        try{
+            HttpClient httpClient = HttpClient.newHttpClient();
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create("https://api.myanimelist.net/v2/users/" + user.getUserName() + "/animelist?status=watching&limit=1000"))
+                    .header("X-MAL-CLIENT-ID", System.getenv("MyAnimeListID"))
+                    .GET()
+                    .build();
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            JSONObject o = new JSONObject(response.body());
+            return o.getJSONArray("data");
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private void generateAnimeFromCurrWatching() {
+        app.panelBot.removeAll();
+        app.panelBot.revalidate();
+        app.panelBot.repaint();
+
+        if(currWatchingAnime == null) {
+            currWatchingAnime = getCurrWatchingAnime();
+        }
+
+        if(currWatchingAnime.isEmpty()) {
+            JLabel error = new JLabel("You are currently not watching any anime. Please select another option for recommendations.");
+            error.setFont(app.headingFont);
+            error.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+            app.panelBot.add(error);
+            app.panelBot.revalidate();
+            app.panelBot.repaint();
+            return;
+        }
+
+        // Displays the anime selected
+        JPanel chosenAnime = new JPanel();
+        chosenAnime.setLayout(new BoxLayout(chosenAnime, BoxLayout.PAGE_AXIS));
+        JLabel chosenAnimeText = new JLabel();
+        chosenAnimeText.setFont(app.headingFont);
+        JLabel chosenAnimeImage = new JLabel();
+
+        JSONObject selectedAnime = getRandomAnime(currWatchingAnime);
+        int id = selectedAnime.getInt("id");
+        String title = selectedAnime.getString("title");
+        chosenAnimeText.setText("Chosen Anime: \"" + title + "\"");
+        String imgURL = selectedAnime.getJSONObject("main_picture").getString("medium");
+
+        JLabel link = new JLabel("https://myanimelist.net/anime/" + id);
+        link.setFont(app.headingFont);
+        link.setForeground(Color.BLUE.darker());
+        link.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        link.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (Desktop.isDesktopSupported()) {
+                    try {
+                        Desktop.getDesktop().browse(new java.net.URI(link.getText()));
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                    }
+                }
+            }
+        });
+
+        BufferedImage animeImg;
+        try {
+            URL urlImg = new URL(imgURL);
+            animeImg = ImageIO.read(urlImg);
+
+            ImageIcon image = new ImageIcon(new ImageIcon(animeImg)
+                    .getImage());
+            chosenAnimeImage.setIcon(image);
+        } catch (Exception f) {
+            f.printStackTrace();
+            chosenAnimeImage.setIcon(new ImageIcon(new ImageIcon("src/main/resources/no-img.png").getImage().getScaledInstance(120, 120,  java.awt.Image.SCALE_SMOOTH)));
+        }
+
+        chosenAnime.add(chosenAnimeText);
+        chosenAnime.add(link);
+        chosenAnime.add(chosenAnimeImage);
+        chosenAnimeText.setAlignmentX(Component.CENTER_ALIGNMENT);
+        link.setAlignmentX(Component.CENTER_ALIGNMENT);
+        chosenAnimeImage.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        JSONArray similarAnime = findRecommendations(id);
+
+        int recommendationLimit = 10;
+
+        // Display Recommendations
+        JPanel holdRecommendedAnimes = new JPanel();
+        holdRecommendedAnimes.setLayout(new BoxLayout(holdRecommendedAnimes, BoxLayout.Y_AXIS));
+
+        for(int i = 0; i < recommendationLimit && i < similarAnime.length(); i++) {
+            JSONObject recAnime = similarAnime.getJSONObject(i).getJSONObject("entry");
+            JLabel animeTitle = new JLabel(recAnime.getString("title"));
+            JLabel animeURL = new JLabel(recAnime.getString("url"));
+            animeTitle.setFont(app.headingFont);
+            animeURL.setFont(app.headingFont);
+
+            JLabel animeImage = new JLabel();
+
+            try {
+                URL recAnimeUrl = new URL(recAnime.getJSONObject("images").getJSONObject("jpg").getString("image_url"));
+                BufferedImage img =ImageIO.read(recAnimeUrl);
+                ImageIcon finalImg = new ImageIcon(new ImageIcon(img)
+                        .getImage());
+                animeImage.setIcon(finalImg);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            animeURL.setForeground(Color.BLUE.darker());
+            animeURL.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            animeURL.addMouseListener(new MouseAdapter() {
+                @Override
+                public void mouseClicked(MouseEvent e) {
+                    if (Desktop.isDesktopSupported()) {
+                        try {
+                            Desktop.getDesktop().browse(new java.net.URI(animeURL.getText()));
+                        } catch (Exception ex) {
+                            ex.printStackTrace();
+                        }
+                    }
+                }
+            });
+
+            holdRecommendedAnimes.add(animeTitle);
+            holdRecommendedAnimes.add(animeURL);
+            holdRecommendedAnimes.add(animeImage);
+            holdRecommendedAnimes.add(Box.createVerticalStrut(20));
+
+            animeTitle.setAlignmentX(Component.CENTER_ALIGNMENT);
+            animeURL.setAlignmentX(Component.CENTER_ALIGNMENT);
+            animeImage.setAlignmentX(Component.CENTER_ALIGNMENT);
+        }
+
+        JScrollPane displayAnimes = new JScrollPane(holdRecommendedAnimes);
+        displayAnimes.getVerticalScrollBar().setUnitIncrement(100);
+
+        app.panelBot.add(chosenAnime);
+        app.panelBot.add(Box.createVerticalStrut(20));
+        app.panelBot.add(displayAnimes);
+        app.panelBot.add(Box.createVerticalStrut(20));
+
+        app.panelBot.revalidate();
+        app.panelBot.repaint();
     }
 
     private void generateRandomAnime() {
@@ -440,6 +603,10 @@ public class GetRecommendations implements ActionListener {
 
             case 3:
                 app.title.setText("Currently Watching");
+                SwingUtilities.invokeLater(()-> {
+                    generateAnimeFromCurrWatching();
+                    displayBackRefresh();
+                });
                 break;
 
             case 4:
@@ -484,6 +651,16 @@ public class GetRecommendations implements ActionListener {
                     app.panelBot.repaint();
                     SwingUtilities.invokeLater(()-> {
                         chooseFromPlanToWatch();
+                        displayBackRefresh();
+                    });
+                    break;
+
+                case 3:
+                    app.title.setText("Currently Watching");
+                    app.panelBot.revalidate();
+                    app.panelBot.repaint();
+                    SwingUtilities.invokeLater(()-> {
+                        generateAnimeFromCurrWatching();
                         displayBackRefresh();
                     });
                     break;
