@@ -147,118 +147,127 @@ public class GetRecommendations implements ActionListener {
             user.addFavouriteAnimes(favouriteAnimes);
         }
 
-        // randomly select an anime from teh arraylist and generate recommendations
-        int randomAnime = getRandomAnime(user.getFavouriteAnimesID());
-        JSONArray recommendations = findRecommendations(randomAnime);
+        if(favouriteAnimes.length() == 0) {
 
-        // Displays the favourite anime selected
-        JSONObject animeDetails = getAnimeDetails(randomAnime);
-        JPanel chosenAnime = new JPanel();
-        JLabel chosenAnimeText = new JLabel();
-        JLabel chosenAnimeImage = new JLabel();
-        if(animeDetails != null) {
-            try {
-                chosenAnimeText.setText("Chosen Anime: \"" + animeDetails.getString("title") + "\"");
+            JLabel errorMsg = new JLabel("You have not selected any favourite animes. Add some on MyAnimeList or use another option");
+            errorMsg.setFont(app.headingFont);
+            errorMsg.setAlignmentX(Component.CENTER_ALIGNMENT);
+            app.panelBot.add(errorMsg);
 
-                BufferedImage animeImg;
+        } else {
+            // randomly select an anime from teh arraylist and generate recommendations
+            int randomAnime = getRandomAnime(user.getFavouriteAnimesID());
+            JSONArray recommendations = findRecommendations(randomAnime);
+
+            // Displays the favourite anime selected
+            JSONObject animeDetails = getAnimeDetails(randomAnime);
+            JPanel chosenAnime = new JPanel();
+            JLabel chosenAnimeText = new JLabel();
+            JLabel chosenAnimeImage = new JLabel();
+            if(animeDetails != null) {
                 try {
-                    URL url = new URL(animeDetails.getJSONObject("main_picture").getString("medium"));
-                    animeImg = ImageIO.read(url);
+                    chosenAnimeText.setText("Chosen Anime: \"" + animeDetails.getString("title") + "\"");
 
-                    ImageIcon image = new ImageIcon(new ImageIcon(animeImg)
-                            .getImage());
+                    BufferedImage animeImg;
+                    try {
+                        URL url = new URL(animeDetails.getJSONObject("main_picture").getString("medium"));
+                        animeImg = ImageIO.read(url);
+
+                        ImageIcon image = new ImageIcon(new ImageIcon(animeImg)
+                                .getImage());
 //                            .getScaledInstance(120, 120,  java.awt.Image.SCALE_SMOOTH));
+                        chosenAnimeImage.setIcon(image);
+                    } catch (Exception f) {
+                        f.printStackTrace();
+                        chosenAnimeImage.setIcon(new ImageIcon(new ImageIcon("src/main/resources/no-img.png").getImage().getScaledInstance(120, 120,  java.awt.Image.SCALE_SMOOTH)));
+                    }
+
+                } catch (JSONException g) {
+                    chosenAnimeText.setText("Error when retrieving anime details, Click Refresh or check environment variable if that doesn't work.");
+                    ImageIcon image = new ImageIcon(new ImageIcon("src/main/resources/error.png")
+                            .getImage());
                     chosenAnimeImage.setIcon(image);
-                } catch (Exception f) {
-                    f.printStackTrace();
-                    chosenAnimeImage.setIcon(new ImageIcon(new ImageIcon("src/main/resources/no-img.png").getImage().getScaledInstance(120, 120,  java.awt.Image.SCALE_SMOOTH)));
+                }
+            }
+
+            // Stores fields of recommendations to display
+            ArrayList<String> titles = new ArrayList<>();
+            ArrayList<String> urls = new ArrayList<>();
+            ArrayList<String> imgUrls = new ArrayList<>();
+            int recommendationLimit = 10;
+            for(int i = 0; i < recommendations.length() && i < recommendationLimit; i++) {
+                JSONObject o = recommendations.getJSONObject(i);
+                JSONObject entry = o.getJSONObject("entry");
+                titles.add(entry.getString("title"));
+                urls.add(entry.getString("url"));
+                imgUrls.add(entry.getJSONObject("images").getJSONObject("jpg").getString("image_url"));
+            }
+
+            // Display recommended anime
+            JPanel holdRecommendedAnimes = new JPanel();
+            holdRecommendedAnimes.setLayout(new BoxLayout(holdRecommendedAnimes, BoxLayout.Y_AXIS));
+
+            for(int i = 0; i < titles.size(); i++) {
+                JLabel animeTitle = new JLabel(titles.get(i));
+                JLabel animeURL = new JLabel(urls.get(i));
+                animeTitle.setFont(app.headingFont);
+                animeURL.setFont(app.headingFont);
+
+                JLabel animeImage = new JLabel();
+
+                try {
+                    URL url = new URL(imgUrls.get(i));
+                    BufferedImage img =ImageIO.read(url);
+                    ImageIcon finalImg = new ImageIcon(new ImageIcon(img)
+                            .getImage());
+                    animeImage.setIcon(finalImg);
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
 
-            } catch (JSONException g) {
-                chosenAnimeText.setText("Error when retrieving anime details, Click Refresh or check environment variable if that doesn't work.");
-                ImageIcon image = new ImageIcon(new ImageIcon("src/main/resources/error.png")
-                        .getImage());
-                chosenAnimeImage.setIcon(image);
-            }
-        }
-
-        // Stores fields of recommendations to display
-        ArrayList<String> titles = new ArrayList<>();
-        ArrayList<String> urls = new ArrayList<>();
-        ArrayList<String> imgUrls = new ArrayList<>();
-        int recommendationLimit = 10;
-        for(int i = 0; i < recommendations.length() && i < recommendationLimit; i++) {
-            JSONObject o = recommendations.getJSONObject(i);
-            JSONObject entry = o.getJSONObject("entry");
-            titles.add(entry.getString("title"));
-            urls.add(entry.getString("url"));
-            imgUrls.add(entry.getJSONObject("images").getJSONObject("jpg").getString("image_url"));
-        }
-
-        // Display recommended anime
-        JPanel holdRecommendedAnimes = new JPanel();
-        holdRecommendedAnimes.setLayout(new BoxLayout(holdRecommendedAnimes, BoxLayout.Y_AXIS));
-
-        for(int i = 0; i < titles.size(); i++) {
-            JLabel animeTitle = new JLabel(titles.get(i));
-            JLabel animeURL = new JLabel(urls.get(i));
-            animeTitle.setFont(app.headingFont);
-            animeURL.setFont(app.headingFont);
-
-            JLabel animeImage = new JLabel();
-
-            try {
-                URL url = new URL(imgUrls.get(i));
-                BufferedImage img =ImageIO.read(url);
-                ImageIcon finalImg = new ImageIcon(new ImageIcon(img)
-                        .getImage());
-                animeImage.setIcon(finalImg);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-
-            animeURL.setForeground(Color.BLUE.darker());
-            animeURL.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-            animeURL.addMouseListener(new MouseAdapter() {
-                @Override
-                public void mouseClicked(MouseEvent e) {
-                    if (Desktop.isDesktopSupported()) {
-                        try {
-                            Desktop.getDesktop().browse(new java.net.URI(animeURL.getText()));
-                        } catch (Exception ex) {
-                            ex.printStackTrace();
+                animeURL.setForeground(Color.BLUE.darker());
+                animeURL.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+                animeURL.addMouseListener(new MouseAdapter() {
+                    @Override
+                    public void mouseClicked(MouseEvent e) {
+                        if (Desktop.isDesktopSupported()) {
+                            try {
+                                Desktop.getDesktop().browse(new java.net.URI(animeURL.getText()));
+                            } catch (Exception ex) {
+                                ex.printStackTrace();
+                            }
                         }
                     }
-                }
-            });
+                });
 
-            holdRecommendedAnimes.add(animeTitle);
-            holdRecommendedAnimes.add(animeURL);
-            holdRecommendedAnimes.add(animeImage);
-            holdRecommendedAnimes.add(Box.createVerticalStrut(20));
+                holdRecommendedAnimes.add(animeTitle);
+                holdRecommendedAnimes.add(animeURL);
+                holdRecommendedAnimes.add(animeImage);
+                holdRecommendedAnimes.add(Box.createVerticalStrut(20));
 
-            animeTitle.setAlignmentX(Component.CENTER_ALIGNMENT);
-            animeURL.setAlignmentX(Component.CENTER_ALIGNMENT);
-            animeImage.setAlignmentX(Component.CENTER_ALIGNMENT);
+                animeTitle.setAlignmentX(Component.CENTER_ALIGNMENT);
+                animeURL.setAlignmentX(Component.CENTER_ALIGNMENT);
+                animeImage.setAlignmentX(Component.CENTER_ALIGNMENT);
+            }
+
+            JScrollPane displayArrayListAnimes = new JScrollPane(holdRecommendedAnimes);
+            displayArrayListAnimes.getVerticalScrollBar().setUnitIncrement(100);
+
+            chosenAnimeText.setFont(app.headingFont);
+            chosenAnime.add(chosenAnimeText);
+            chosenAnime.add(chosenAnimeImage);
+
+            chosenAnime.setLayout(new BoxLayout(chosenAnime, BoxLayout.Y_AXIS));
+            chosenAnimeImage.setAlignmentX(Component.CENTER_ALIGNMENT);
+            chosenAnimeText.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+            app.panelBot.add(chosenAnime);
+            app.panelBot.add(Box.createVerticalStrut(20));
+            app.panelBot.add(displayArrayListAnimes);
+            app.panelBot.add(Box.createVerticalStrut(20));
+            app.panelBot.revalidate();
+            app.panelBot.repaint();
         }
-
-        JScrollPane displayArrayListAnimes = new JScrollPane(holdRecommendedAnimes);
-        displayArrayListAnimes.getVerticalScrollBar().setUnitIncrement(100);
-
-        chosenAnimeText.setFont(app.headingFont);
-        chosenAnime.add(chosenAnimeText);
-        chosenAnime.add(chosenAnimeImage);
-
-        chosenAnime.setLayout(new BoxLayout(chosenAnime, BoxLayout.Y_AXIS));
-        chosenAnimeImage.setAlignmentX(Component.CENTER_ALIGNMENT);
-        chosenAnimeText.setAlignmentX(Component.CENTER_ALIGNMENT);
-
-        app.panelBot.add(chosenAnime);
-        app.panelBot.add(Box.createVerticalStrut(20));
-        app.panelBot.add(displayArrayListAnimes);
-        app.panelBot.add(Box.createVerticalStrut(20));
-        app.panelBot.revalidate();
-        app.panelBot.repaint();
     }
 
     // For Displaying buttons
