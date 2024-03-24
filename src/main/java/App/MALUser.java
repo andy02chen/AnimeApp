@@ -1,6 +1,5 @@
 package App;
 
-import org.json.JSONArray;
 import org.json.JSONObject;
 
 import javax.imageio.ImageIO;
@@ -12,7 +11,6 @@ import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
 import java.awt.image.BufferedImage;
 import java.net.URL;
-import java.util.ArrayList;
 
 public class MALUser implements ActionListener {
     AppGUI app;
@@ -21,31 +19,13 @@ public class MALUser implements ActionListener {
     private JPanel confirmPanel;
     private JSONObject userData;
     private JLabel confirmUserText;
-    private final ArrayList<Integer> favouriteAnimesId;
 
     public MALUser(AppGUI app) {
         this.app = app;
-        favouriteAnimesId = new ArrayList<>();
     }
 
     public void setConfirmUserText(String text) {
         confirmUserText.setText(text);
-    }
-
-    public int favouriteAnimesSize() {
-        return favouriteAnimesId.size();
-    }
-
-    // Add IDs to favourite animes arraylist
-    public void addFavouriteAnimes(JSONArray favouriteAnimes) {
-        for(int i = 0; i < favouriteAnimes.length(); i++) {
-            JSONObject anime = favouriteAnimes.getJSONObject(i);
-            favouriteAnimesId.add(anime.getInt("mal_id"));
-        }
-    }
-
-    public ArrayList<Integer> getFavouriteAnimesID() {
-        return favouriteAnimesId;
     }
 
     public void enterUserName() {
@@ -147,12 +127,7 @@ public class MALUser implements ActionListener {
         JButton yesButton = new JButton("Yes");
         yesButton.addActionListener(new ConfirmUser(app, this));
         JButton noButton = new JButton("No");
-        noButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                enterUserName();
-            }
-        });
+        noButton.addActionListener(e -> enterUserName());
         yesButton.setFont(app.headingFont);
         noButton.setFont(app.headingFont);
 

@@ -13,7 +13,6 @@ public class AppGUI extends JFrame {
     public Font headingFont;
     public Font titleFont;
     public Font textFont;
-    private String username;
 
     public AppGUI() {
         super("Anime Recommender App");
@@ -61,7 +60,6 @@ public class AppGUI extends JFrame {
         title.setText("Recommendations");
         panelBot.setLayout(new BoxLayout(panelBot, BoxLayout.PAGE_AXIS));
 
-        GridBagConstraints gbc = new GridBagConstraints();
         JLabel text = new JLabel("How would you like the recommendations to be generated?");
         text.setFont(headingFont);
 

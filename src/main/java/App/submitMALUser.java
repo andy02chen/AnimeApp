@@ -2,14 +2,9 @@ package App;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.net.http.HttpRequest;
 import java.util.Scanner;
-
-import org.json.JSONArray;
 import org.json.JSONObject;
 
 import javax.swing.*;
