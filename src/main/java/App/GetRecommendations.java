@@ -256,17 +256,63 @@ public class GetRecommendations implements ActionListener {
         chosenAnimeText.setAlignmentX(Component.CENTER_ALIGNMENT);
         chosenAnimeImage.setAlignmentX(Component.CENTER_ALIGNMENT);
         chosenAnimeText.setFont(app.headingFont);
+        app.panelBot.add(chosenAnime);
 
         // Generate Recommendations
         JSONArray recommendations = findRecommendations(randomAnimeID);
+        displayRecommendations(recommendations);
+
+
+        app.panelBot.revalidate();
+        app.panelBot.repaint();
+    }
+
+    // Call API and get random anime
+    private JSONObject apiRandomAnime() {
+        try{
+            HttpClient httpClient = HttpClient.newHttpClient();
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create("https://api.jikan.moe/v4/random/anime"))
+                    .GET()
+                    .build();
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            JSONObject o = new JSONObject(response.body());
+            return o.getJSONObject("data");
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    // Generate recommendations that are similar to the ones currently watching
+    private JSONArray getCurrWatchingAnime() {
+        try{
+            HttpClient httpClient = HttpClient.newHttpClient();
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create("https://api.myanimelist.net/v2/users/" + user.getUserName() + "/animelist?status=watching&limit=1000"))
+                    .header("X-MAL-CLIENT-ID", System.getenv("MyAnimeListID"))
+                    .GET()
+                    .build();
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            JSONObject o = new JSONObject(response.body());
+            return o.getJSONArray("data");
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private void displayRecommendations(JSONArray similarAnime) {
         int recommendationLimit = 10;
 
         // Display Recommendations
         JPanel holdRecommendedAnimes = new JPanel();
         holdRecommendedAnimes.setLayout(new BoxLayout(holdRecommendedAnimes, BoxLayout.Y_AXIS));
 
-        for(int i = 0; i < recommendationLimit && i < recommendations.length(); i++) {
-            JSONObject recAnime = recommendations.getJSONObject(i).getJSONObject("entry");
+        for(int i = 0; i < recommendationLimit && i < similarAnime.length(); i++) {
+            JSONObject recAnime = similarAnime.getJSONObject(i).getJSONObject("entry");
             JLabel animeTitle = new JLabel(recAnime.getString("title"));
             JLabel animeURL = new JLabel(recAnime.getString("url"));
             animeTitle.setFont(app.headingFont);
@@ -312,58 +358,9 @@ public class GetRecommendations implements ActionListener {
         JScrollPane displayAnimes = new JScrollPane(holdRecommendedAnimes);
         displayAnimes.getVerticalScrollBar().setUnitIncrement(100);
 
-        chosenAnimeText.setFont(app.headingFont);
-        chosenAnime.add(chosenAnimeText);
-        chosenAnime.add(chosenAnimeImage);
-
-        chosenAnime.setLayout(new BoxLayout(chosenAnime, BoxLayout.Y_AXIS));
-        chosenAnimeImage.setAlignmentX(Component.CENTER_ALIGNMENT);
-        chosenAnimeText.setAlignmentX(Component.CENTER_ALIGNMENT);
-
-        app.panelBot.add(chosenAnime);
         app.panelBot.add(Box.createVerticalStrut(20));
         app.panelBot.add(displayAnimes);
         app.panelBot.add(Box.createVerticalStrut(20));
-
-        app.panelBot.revalidate();
-        app.panelBot.repaint();
-    }
-
-    // Call API and get random anime
-    private JSONObject apiRandomAnime() {
-        try{
-            HttpClient httpClient = HttpClient.newHttpClient();
-
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create("https://api.jikan.moe/v4/random/anime"))
-                    .GET()
-                    .build();
-
-            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-            JSONObject o = new JSONObject(response.body());
-            return o.getJSONObject("data");
-        } catch (Exception e) {
-            return null;
-        }
-    }
-
-    // Generate recommendations that are similar to the ones currently watching
-    private JSONArray getCurrWatchingAnime() {
-        try{
-            HttpClient httpClient = HttpClient.newHttpClient();
-
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create("https://api.myanimelist.net/v2/users/" + user.getUserName() + "/animelist?status=watching&limit=1000"))
-                    .header("X-MAL-CLIENT-ID", System.getenv("MyAnimeListID"))
-                    .GET()
-                    .build();
-
-            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-            JSONObject o = new JSONObject(response.body());
-            return o.getJSONArray("data");
-        } catch (Exception e) {
-            return null;
-        }
     }
 
     private void generateAnimeFromCurrWatching() {
@@ -435,66 +432,11 @@ public class GetRecommendations implements ActionListener {
         chosenAnimeText.setAlignmentX(Component.CENTER_ALIGNMENT);
         link.setAlignmentX(Component.CENTER_ALIGNMENT);
         chosenAnimeImage.setAlignmentX(Component.CENTER_ALIGNMENT);
+        app.panelBot.add(chosenAnime);
 
         JSONArray similarAnime = findRecommendations(id);
+        displayRecommendations(similarAnime);
 
-        int recommendationLimit = 10;
-
-        // Display Recommendations
-        JPanel holdRecommendedAnimes = new JPanel();
-        holdRecommendedAnimes.setLayout(new BoxLayout(holdRecommendedAnimes, BoxLayout.Y_AXIS));
-
-        for(int i = 0; i < recommendationLimit && i < similarAnime.length(); i++) {
-            JSONObject recAnime = similarAnime.getJSONObject(i).getJSONObject("entry");
-            JLabel animeTitle = new JLabel(recAnime.getString("title"));
-            JLabel animeURL = new JLabel(recAnime.getString("url"));
-            animeTitle.setFont(app.headingFont);
-            animeURL.setFont(app.headingFont);
-
-            JLabel animeImage = new JLabel();
-
-            try {
-                URL recAnimeUrl = new URL(recAnime.getJSONObject("images").getJSONObject("jpg").getString("image_url"));
-                BufferedImage img =ImageIO.read(recAnimeUrl);
-                ImageIcon finalImg = new ImageIcon(new ImageIcon(img)
-                        .getImage());
-                animeImage.setIcon(finalImg);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-
-            animeURL.setForeground(Color.BLUE.darker());
-            animeURL.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-            animeURL.addMouseListener(new MouseAdapter() {
-                @Override
-                public void mouseClicked(MouseEvent e) {
-                    if (Desktop.isDesktopSupported()) {
-                        try {
-                            Desktop.getDesktop().browse(new java.net.URI(animeURL.getText()));
-                        } catch (Exception ex) {
-                            ex.printStackTrace();
-                        }
-                    }
-                }
-            });
-
-            holdRecommendedAnimes.add(animeTitle);
-            holdRecommendedAnimes.add(animeURL);
-            holdRecommendedAnimes.add(animeImage);
-            holdRecommendedAnimes.add(Box.createVerticalStrut(20));
-
-            animeTitle.setAlignmentX(Component.CENTER_ALIGNMENT);
-            animeURL.setAlignmentX(Component.CENTER_ALIGNMENT);
-            animeImage.setAlignmentX(Component.CENTER_ALIGNMENT);
-        }
-
-        JScrollPane displayAnimes = new JScrollPane(holdRecommendedAnimes);
-        displayAnimes.getVerticalScrollBar().setUnitIncrement(100);
-
-        app.panelBot.add(chosenAnime);
-        app.panelBot.add(Box.createVerticalStrut(20));
-        app.panelBot.add(displayAnimes);
-        app.panelBot.add(Box.createVerticalStrut(20));
 
         app.panelBot.revalidate();
         app.panelBot.repaint();

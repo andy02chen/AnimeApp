@@ -81,10 +81,10 @@ public class AppGUI extends JFrame {
         JButton fromWatching = new JButton("Currently Watching");
         fromWatching.addActionListener(new GetRecommendations(this, 3, user));
 
-        JButton random = new JButton("Random (NSFW chance)");
+        JButton random = new JButton("Random (chance of NSFW)");
         random.addActionListener(new GetRecommendations(this, 4, user));
 
-        Dimension buttonSize = new Dimension(300,50);
+        Dimension buttonSize = new Dimension(350,50);
         fromFavs.setPreferredSize(buttonSize);
         fromPlanToWatch.setPreferredSize(buttonSize);
         fromCompleted.setPreferredSize(buttonSize);
