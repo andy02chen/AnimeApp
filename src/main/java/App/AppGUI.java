@@ -69,20 +69,46 @@ public class AppGUI extends JFrame {
         JPanel p4 = new JPanel();
         JPanel p5 = new JPanel();
 
+        p1.setLayout(new BoxLayout(p1, BoxLayout.PAGE_AXIS));
+        p2.setLayout(new BoxLayout(p2, BoxLayout.PAGE_AXIS));
+        p3.setLayout(new BoxLayout(p3, BoxLayout.PAGE_AXIS));
+        p4.setLayout(new BoxLayout(p4, BoxLayout.PAGE_AXIS));
+        p5.setLayout(new BoxLayout(p5, BoxLayout.PAGE_AXIS));
+
         JButton fromFavs = new JButton("Favourites");
         fromFavs.addActionListener(new GetRecommendations(this, 0, user));
+        JLabel fromFavsDesc = new JLabel("Recommends anime based on your favourite animes.");
+        fromFavsDesc.setFont(headingFont);
+        fromFavs.setAlignmentX(Component.CENTER_ALIGNMENT);
+        fromFavsDesc.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         JButton fromPlanToWatch = new JButton("Plan to Watch");
         fromPlanToWatch.addActionListener(new GetRecommendations(this, 1, user));
+        JLabel fromPlanToWatchDesc = new JLabel("Randomly chooses an anime from your plan to watch list. (Stop being indecisive)");
+        fromPlanToWatchDesc.setFont(headingFont);
+        fromPlanToWatch.setAlignmentX(Component.CENTER_ALIGNMENT);
+        fromPlanToWatchDesc.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         JButton fromCompleted = new JButton("Completed");
         fromCompleted.addActionListener(new GetRecommendations(this, 2, user));
+        JLabel fromCompletedDesc = new JLabel("Recommends anime based on your completed anime.");
+        fromCompletedDesc.setFont(headingFont);
+        fromCompleted.setAlignmentX(Component.CENTER_ALIGNMENT);
+        fromCompletedDesc.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         JButton fromWatching = new JButton("Currently Watching");
         fromWatching.addActionListener(new GetRecommendations(this, 3, user));
+        JLabel fromWatchingDesc = new JLabel("Recommends anime based on your what you are currently watching.");
+        fromWatchingDesc.setFont(headingFont);
+        fromWatching.setAlignmentX(Component.CENTER_ALIGNMENT);
+        fromWatchingDesc.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        JButton random = new JButton("Random (chance of NSFW)");
+        JButton random = new JButton("Random");
         random.addActionListener(new GetRecommendations(this, 4, user));
+        JLabel randomDesc = new JLabel("Randomly chooses an anime from the MyAnimeList Database (WARNING: MAY CONTAIN NSFW CONTENT)");
+        randomDesc.setFont(headingFont);
+        random.setAlignmentX(Component.CENTER_ALIGNMENT);
+        randomDesc.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         Dimension buttonSize = new Dimension(350,50);
         fromFavs.setPreferredSize(buttonSize);
@@ -98,17 +124,27 @@ public class AppGUI extends JFrame {
         random.setFont(headingFont);
 
         panelBot.add(text);
+        panelBot.add(Box.createVerticalStrut(40));
         panelBot.add(p1);
+        panelBot.add(Box.createVerticalStrut(40));
         panelBot.add(p2);
+        panelBot.add(Box.createVerticalStrut(40));
         panelBot.add(p3);
+        panelBot.add(Box.createVerticalStrut(40));
         panelBot.add(p4);
+        panelBot.add(Box.createVerticalStrut(40));
         panelBot.add(p5);
 
         p1.add(fromFavs);
+        p1.add(fromFavsDesc);
         p2.add(fromPlanToWatch);
+        p2.add(fromPlanToWatchDesc);
         p3.add(fromCompleted);
+        p3.add(fromCompletedDesc);
         p4.add(fromWatching);
+        p4.add(fromWatchingDesc);
         p5.add(random);
+        p5.add(randomDesc);
 
         text.setAlignmentX(Component.CENTER_ALIGNMENT);
 

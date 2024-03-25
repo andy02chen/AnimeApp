@@ -26,11 +26,84 @@ public class GetRecommendations implements ActionListener {
     private JSONArray favAnimes;
     private JSONArray planToWatchList;
     private JSONArray currWatchingAnime;
+    private JSONArray completedAnime;
 
     public GetRecommendations(AppGUI app, int optionSelection, MALUser user) {
         this.app = app;
         this.selection = optionSelection;
         this.user = user;
+    }
+
+    public JSONArray getCompletedAnime() {
+        try {
+            HttpClient httpClient = HttpClient.newHttpClient();
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create("https://api.myanimelist.net/v2/users/" + user.getUserName() + "/animelist?status=completed&limit=1000&fields=list_status"))
+                    .header("X-MAL-CLIENT-ID", System.getenv("MyAnimeListID"))
+                    .GET()
+                    .build();
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            JSONObject o = new JSONObject(response.body());
+            return o.getJSONArray("data");
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    public void generateAnimeFromCompleted() {
+        app.panelBot.removeAll();
+        app.panelBot.revalidate();
+        app.panelBot.repaint();
+
+        if(completedAnime == null) {
+            completedAnime = getCompletedAnime();
+        }
+
+        JPanel chooseCompletedAnimePanel = new JPanel();
+        chooseCompletedAnimePanel.setLayout(new BoxLayout(chooseCompletedAnimePanel, BoxLayout.Y_AXIS));
+
+        if(completedAnime == null) {
+            JLabel error = new JLabel("Error getting plan to watch list. Make sure environment variable is correct and try again.");
+            error.setFont(app.headingFont);
+            error.setAlignmentX(Component.CENTER_ALIGNMENT);
+            chooseCompletedAnimePanel.add(error);
+        } else {
+            if(completedAnime.isEmpty()) {
+                // User has not completed any anime
+                JLabel error = new JLabel("You have not completed any anime. Please choosen another option.");
+                error.setFont(app.headingFont);
+                error.setAlignmentX(Component.CENTER_ALIGNMENT);
+                chooseCompletedAnimePanel.add(error);
+            } else {
+                System.out.println(completedAnime);
+                JPanel panelComboBox = new JPanel();
+
+                String[] scores = {"Choose a rating","Any Rating","1","2","3","4","5","6","7","8","9","10"};
+                JComboBox<String> scoreSelect = new JComboBox<String>(scores);
+                scoreSelect.setFont(app.headingFont);
+                panelComboBox.add(scoreSelect);
+
+                JButton chooseAnime = new JButton("Choose");
+                chooseAnime.setFont(app.headingFont);
+
+                JLabel instruction = new JLabel("Randomly select anime with chosen score to get recommendations");
+                instruction.setFont(app.headingFont);
+
+                chooseCompletedAnimePanel.add(instruction);
+                chooseCompletedAnimePanel.add(panelComboBox);
+                chooseCompletedAnimePanel.add(chooseAnime);
+
+                instruction.setAlignmentX(Component.CENTER_ALIGNMENT);
+                scoreSelect.setAlignmentX(Component.CENTER_ALIGNMENT);
+                chooseAnime.setAlignmentX(Component.CENTER_ALIGNMENT);
+            }
+        }
+
+        app.panelBot.add(chooseCompletedAnimePanel);
+        app.panelBot.revalidate();
+        app.panelBot.repaint();
     }
 
     // Randomly selects one anime from the favourites list to get recommendations
@@ -541,6 +614,10 @@ public class GetRecommendations implements ActionListener {
 
             case 2:
                 app.title.setText("Completed");
+                SwingUtilities.invokeLater(()-> {
+                    generateAnimeFromCompleted();
+                    displayBackRefresh();
+                });
                 break;
 
             case 3:
@@ -593,6 +670,16 @@ public class GetRecommendations implements ActionListener {
                     app.panelBot.repaint();
                     SwingUtilities.invokeLater(()-> {
                         chooseFromPlanToWatch();
+                        displayBackRefresh();
+                    });
+                    break;
+
+                case 2:
+                    app.title.setText("Completed");
+                    app.panelBot.revalidate();
+                    app.panelBot.repaint();
+                    SwingUtilities.invokeLater(()-> {
+                        generateAnimeFromCompleted();
                         displayBackRefresh();
                     });
                     break;
