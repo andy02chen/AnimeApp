@@ -17,6 +17,8 @@ import java.net.URL;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.Arrays;
+import java.util.Objects;
 import java.util.Scanner;
 
 public class GetRecommendations implements ActionListener {
@@ -52,6 +54,92 @@ public class GetRecommendations implements ActionListener {
         }
     }
 
+    public JSONArray getCompletedAnimeWithRating(String rating) {
+        JSONArray animeWithRating = new JSONArray();
+
+        if(rating.equals("Any rating")){
+            return completedAnime;
+        } else if (rating.equals("No rating")) {
+            for(int i = 0; i < completedAnime.length(); i++) {
+                JSONObject anime = (JSONObject) completedAnime.get(i);
+                Integer score = anime.getJSONObject("list_status").getInt("score");
+                if(score.equals(0)) {
+                    animeWithRating.put(anime);
+                }
+            }
+        } else if(rating.equals("Choose a rating")) {
+            return null;
+        } else {
+            for(int i = 0; i < completedAnime.length(); i++) {
+                JSONObject anime = (JSONObject) completedAnime.get(i);
+                Integer score = anime.getJSONObject("list_status").getInt("score");
+                if(score.equals(Integer.parseInt(rating))) {
+                    animeWithRating.put(anime);
+                }
+            }
+        }
+        return animeWithRating;
+    }
+
+    private void displayRecommendationsFromCompletedAnime(JComboBox<String> scoreSelect) {
+        JSONArray animesList = getCompletedAnimeWithRating((String) Objects.requireNonNull(scoreSelect.getSelectedItem()));
+
+        if(animesList == null) {
+            app.panelBot.removeAll();;
+            app.panelBot.revalidate();
+            app.panelBot.repaint();
+            JLabel error = new JLabel("Please click 'Refresh' and choose a valid rating");
+            error.setFont(app.headingFont);
+            error.setAlignmentX(Component.CENTER_ALIGNMENT);
+            app.panelBot.add(error);
+            displayBackRefresh();
+            return;
+        }
+
+        if(!animesList.isEmpty()) {
+            JPanel chosenAnimePanel = new JPanel();
+            chosenAnimePanel.setLayout(new BoxLayout(chosenAnimePanel, BoxLayout.PAGE_AXIS));
+            JSONObject chosenAnime = getRandomAnime(animesList);
+
+            JLabel chosenAnimeTitle = new JLabel("Chosen Anime: \"" + chosenAnime.getString("title") + "\"");
+            chosenAnimeTitle.setFont(app.headingFont);
+            chosenAnimeTitle.setAlignmentX(Component.CENTER_ALIGNMENT);
+            chosenAnimePanel.add(chosenAnimeTitle);
+
+            JLabel chosenAnimeImage = new JLabel();
+            BufferedImage animeImg;
+            try {
+                URL urlImg = new URL(chosenAnime.getJSONObject("main_picture").getString("medium"));
+                animeImg = ImageIO.read(urlImg);
+
+                ImageIcon image = new ImageIcon(new ImageIcon(animeImg)
+                        .getImage());
+                chosenAnimeImage.setIcon(image);
+            } catch (Exception f) {
+                f.printStackTrace();
+                chosenAnimeImage.setIcon(new ImageIcon(new ImageIcon("src/main/resources/no-img.png").getImage().getScaledInstance(120, 120,  java.awt.Image.SCALE_SMOOTH)));
+            }
+            chosenAnimePanel.add(chosenAnimeImage);
+            chosenAnimeImage.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+            app.panelBot.removeAll();
+            JSONArray recommendations = findRecommendations(chosenAnime.getInt("id"));
+            app.panelBot.add(chosenAnimePanel);
+            displayRecommendations(recommendations);
+            app.panelBot.revalidate();
+            app.panelBot.repaint();
+        } else {
+            app.panelBot.removeAll();;
+            app.panelBot.revalidate();
+            app.panelBot.repaint();
+            JLabel error = new JLabel("Unable to find an anime with that rating. Please click 'Refresh' and select another rating.");
+            error.setFont(app.headingFont);
+            error.setAlignmentX(Component.CENTER_ALIGNMENT);
+            app.panelBot.add(error);
+        }
+        displayBackRefresh();
+    }
+
     public void generateAnimeFromCompleted() {
         app.panelBot.removeAll();
         app.panelBot.revalidate();
@@ -76,11 +164,13 @@ public class GetRecommendations implements ActionListener {
                 error.setFont(app.headingFont);
                 error.setAlignmentX(Component.CENTER_ALIGNMENT);
                 chooseCompletedAnimePanel.add(error);
+                app.panelBot.add(chooseCompletedAnimePanel);
+                app.panelBot.revalidate();
+                app.panelBot.repaint();
             } else {
-                System.out.println(completedAnime);
                 JPanel panelComboBox = new JPanel();
 
-                String[] scores = {"Choose a rating","Any Rating","1","2","3","4","5","6","7","8","9","10"};
+                String[] scores = {"Choose a rating","Any rating","No rating","1","2","3","4","5","6","7","8","9","10"};
                 JComboBox<String> scoreSelect = new JComboBox<String>(scores);
                 scoreSelect.setFont(app.headingFont);
                 panelComboBox.add(scoreSelect);
@@ -98,12 +188,28 @@ public class GetRecommendations implements ActionListener {
                 instruction.setAlignmentX(Component.CENTER_ALIGNMENT);
                 scoreSelect.setAlignmentX(Component.CENTER_ALIGNMENT);
                 chooseAnime.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+                app.panelBot.add(chooseCompletedAnimePanel);
+                app.panelBot.revalidate();
+                app.panelBot.repaint();
+                chooseAnime.addActionListener(new ActionListener() {
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                        app.panelBot.removeAll();
+                        JLabel msg = new JLabel("Please Wait...");
+                        msg.setFont(app.headingFont);
+                        msg.setAlignmentX(Component.CENTER_ALIGNMENT);
+                        app.panelBot.add(msg);
+                        app.panelBot.revalidate();
+                        app.panelBot.repaint();
+
+                        SwingUtilities.invokeLater(() -> {
+                            displayRecommendationsFromCompletedAnime(scoreSelect);
+                        });
+                    }
+                });
             }
         }
-
-        app.panelBot.add(chooseCompletedAnimePanel);
-        app.panelBot.revalidate();
-        app.panelBot.repaint();
     }
 
     // Randomly selects one anime from the favourites list to get recommendations
