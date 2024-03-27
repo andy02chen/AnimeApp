@@ -621,7 +621,7 @@ public class GetRecommendations implements ActionListener {
         app.panelBot.repaint();
     }
 
-    private void generateRandomAnime() {
+    public void generateRandomAnime() {
         app.panelBot.removeAll();
         app.panelBot.revalidate();
         app.panelBot.repaint();
@@ -674,7 +674,7 @@ public class GetRecommendations implements ActionListener {
     }
 
     // For Displaying buttons
-    private void displayBackRefresh() {
+    public void displayBackRefresh() {
         JPanel backButtonPanel = new JPanel(new GridBagLayout());
         JButton refreshButton = getRefreshButton();
 

@@ -92,7 +92,6 @@ public class MALUser implements ActionListener {
     private void MALUserScreen() {
         // Change Screen Being Displayed
 
-        // TODO maybe change the layout for the login screen
         app.panelBot.setLayout(new GridLayout(4,1));
         app.title.setText("Continue with MAL Username");
 
